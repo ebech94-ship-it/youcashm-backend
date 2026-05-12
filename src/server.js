@@ -33,6 +33,12 @@ app.use("/api", gameRoutes);
 // Socket connection
 io.on("connection", (socket) => {
   console.log("🟢 User connected:", socket.id);
+  
+   // TEST CONNECTION SIGNAL
+  socket.emit("connected", {
+    message: "youCashM backend connected",
+    id: socket.id
+  });
 
   socket.on("disconnect", () => {
     console.log("🔴 User disconnected:", socket.id);
