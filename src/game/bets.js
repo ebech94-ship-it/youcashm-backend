@@ -40,7 +40,7 @@ function cashout(betId, multiplier) {
 module.exports = {
   placeBet,
   getBetsByRound,
-  cashoutBet,
+ 
   getActiveBetsByRound,
    cashout,
 };
