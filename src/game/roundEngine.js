@@ -13,6 +13,7 @@ function generateCrashPoint() {
 }
 
 function startRound() {
+console.log("🚀 ROUND START FUNCTION CALLED");
   // 🚨 HARD LOCK
   if (isRunning) {
     console.log("⚠️ Round already running — ignored");

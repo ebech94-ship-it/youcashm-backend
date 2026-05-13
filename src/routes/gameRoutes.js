@@ -2,8 +2,8 @@ const express = require("express");
 const router = express.Router();
 
 const { startRound, getCurrentRound } = require("../game/roundEngine");
-const { placeBet } = require("../game/bets");
-const { getBalance } = require("../services/wallet");
+const { placeBet,  cashout,  } = require("../game/bets");
+const { getBalance, credit, } = require("../services/wallet");
 
 // 👉 START ROUND (TEST ONLY)
 router.get("/start", (req, res) => {
@@ -20,13 +20,38 @@ router.get("/round", (req, res) => {
 router.post("/bet", (req, res) => {
   const { userId, amount, roundId } = req.body;
 
+  // 1. basic validation
   if (!userId || !amount || !roundId) {
-    return res.status(400).json({ error: "Missing fields" });
+    return res.status(400).json({
+      success: false,
+      message: "Missing fields",
+    });
   }
 
+  // 2. safety check (optional but important)
+  const currentRound = getCurrentRound();
+
+  if (!currentRound || currentRound.status !== "running") {
+    return res.status(400).json({
+      success: false,
+      message: "No active round",
+    });
+  }
+
+  if (currentRound.id !== roundId) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid round",
+    });
+  }
+
+  // 3. place bet
   const bet = placeBet(userId, amount, roundId);
 
-  res.json(bet);
+  return res.json({
+    success: true,
+    bet,
+  });
 });
 
 // 👉 WALLET BALANCE
@@ -34,28 +59,49 @@ router.get("/wallet/:userId", (req, res) => {
   const balance = getBalance(req.params.userId);
   res.json({ balance });
 });
+
 router.post("/cashout", (req, res) => {
   const { betId } = req.body;
 
   const round = getCurrentRound();
 
+  // 1. validate round
   if (!round || round.status !== "running") {
-    return res.status(400).json({ error: "Round not active" });
+    return res.status(400).json({
+      success: false,
+      message: "Round not active",
+    });
   }
 
+  // 2. validate betId
+  if (!betId) {
+    return res.status(400).json({
+      success: false,
+      message: "Missing betId",
+    });
+  }
+
+  // 3. cashout bet
   const result = cashout(betId, round.multiplier);
 
   if (!result) {
-    return res.status(400).json({ error: "Invalid bet or already cashed out" });
+    return res.status(400).json({
+      success: false,
+      message: "Invalid bet or already cashed out",
+    });
   }
 
-  // 💰 credit wallet
+  // 4. credit wallet
   credit(result.userId, result.winAmount);
 
   console.log(
-    `💰 CASHOUT: ${result.userId} | WIN: ${result.winAmount}`
+    `💰 CASHOUT SUCCESS: ${result.userId} | WIN: ${result.winAmount}`
   );
 
-  res.json(result);
+  // 5. response
+  return res.json({
+    success: true,
+    bet: result,
+  });
 });
 module.exports = router;
