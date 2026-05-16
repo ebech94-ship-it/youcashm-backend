@@ -1,6 +1,6 @@
 const { getActiveBetsByRound, cashout } = require("./bets");
 const { credit } = require("../services/wallet");
-
+console.log("🎮 ENGINE FILE LOADED");
 let currentRound = null;
 let interval = null;
 let isRunning = false;

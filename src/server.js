@@ -5,6 +5,10 @@ const { Server } = require("socket.io");
 
 const gameRoutes = require("./routes/gameRoutes");
 
+// 👇 IMPORTANT: import your engine here
+const { startRound } = require("./services/gameEngine"); 
+// example: "./engine/roundEngine" or "./services/gameEngine"
+
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -20,12 +24,12 @@ const io = new Server(server, {
   }
 });
 
-// Make io accessible globally (simple approach)
+// Make io accessible globally
 global.io = io;
 
 // Routes
 app.get("/", (req, res) => {
-  res.send("🚀 BechMine Server Running (Realtime Enabled)");
+  res.send("🚀 youCashM Server Running (Realtime Enabled)");
 });
 
 app.use("/api", gameRoutes);
@@ -33,8 +37,7 @@ app.use("/api", gameRoutes);
 // Socket connection
 io.on("connection", (socket) => {
   console.log("🟢 User connected:", socket.id);
-  
-   // TEST CONNECTION SIGNAL
+
   socket.emit("connected", {
     message: "youCashM backend connected",
     id: socket.id
@@ -45,6 +48,18 @@ io.on("connection", (socket) => {
   });
 });
 
+server.listen(PORT, () => {
+  console.log(`🔥 Server running on port ${PORT}`);
+  console.log("🚀 youCashM backend running on Render");
+
+  // ✅ START ENGINE ONLY AFTER SERVER IS FULLY UP
+  setTimeout(() => {
+    console.log("🎮 Starting game engine...");
+    startRound();
+  }, 1000);
+});
+
+// Start server
 const PORT = process.env.PORT || 5000;
 
 server.listen(PORT, () => {
