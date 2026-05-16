@@ -6,25 +6,24 @@ const { Server } = require("socket.io");
 const gameRoutes = require("./routes/gameRoutes");
 
 // 👇 IMPORTANT: import your engine here
-const { startRound } = require("./game/roundEngine"); 
-// example: "./engine/roundEngine" or "./src/game/gameEngine"
+const { startRound } = require("./game/roundEngine");
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// HTTP server (IMPORTANT for sockets)
+// HTTP server (required for Socket.IO)
 const server = http.createServer(app);
 
-// Socket server
+// Socket.IO setup
 const io = new Server(server, {
   cors: {
     origin: "*",
-    methods: ["GET", "POST"]
-  }
+    methods: ["GET", "POST"],
+  },
 });
 
-// Make io accessible globally
+// Make io globally accessible
 global.io = io;
 
 // Routes
@@ -40,7 +39,7 @@ io.on("connection", (socket) => {
 
   socket.emit("connected", {
     message: "youCashM backend connected",
-    id: socket.id
+    id: socket.id,
   });
 
   socket.on("disconnect", () => {
@@ -48,21 +47,17 @@ io.on("connection", (socket) => {
   });
 });
 
+// ✅ IMPORTANT: DEFINE PORT BEFORE USING IT
+const PORT = process.env.PORT || 5000;
+
+// Start server ONLY ONCE
 server.listen(PORT, () => {
   console.log(`🔥 Server running on port ${PORT}`);
   console.log("🚀 youCashM backend running on Render");
 
-  // ✅ START ENGINE ONLY AFTER SERVER IS FULLY UP
+  // Start game engine after server is ready
   setTimeout(() => {
     console.log("🎮 Starting game engine...");
     startRound();
   }, 1000);
-});
-
-// Start server
-const PORT = process.env.PORT || 5000;
-
-server.listen(PORT, () => {
-  console.log(`🔥 Server running on port ${PORT}`);
-  console.log("🚀 youCashM backend running on Render");
 });
