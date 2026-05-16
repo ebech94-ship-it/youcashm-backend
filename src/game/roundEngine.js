@@ -25,7 +25,7 @@ console.log("🚀 ROUND START FUNCTION CALLED");
   const crashPoint = generateCrashPoint();
 
   currentRound = {
-    id: Date.now(),
+    roundId: Date.now(),
     status: "running",
     multiplier: 1.0,
     crashPoint,
@@ -33,62 +33,76 @@ console.log("🚀 ROUND START FUNCTION CALLED");
     startedAt: Date.now(),
   };
 
-  console.log("🔥 New round started:", currentRound.id, "Crash at:", crashPoint);
+  console.log("🔥 New round started:", currentRound.roundId, "Crash at:", crashPoint);
 
   // 📡 ROUND START EVENT
   global.io?.emit("roundStart", {
-    roundId: currentRound.id,
+    roundId: currentRound.roundId,
     crashPoint,
   });
 
-  interval = setInterval(() => {
-    // 📈 MULTIPLIER UPDATE
-    currentRound.multiplier = +(currentRound.multiplier + 0.05).toFixed(2);
+  
+interval = setInterval(() => {
+  if (!currentRound) return;
 
-    // 📡 BROADCAST MULTIPLIER
-    global.io?.emit("multiplier", {
-      multiplier: currentRound.multiplier,
-      roundId: currentRound.id,
-      status: currentRound.status,
-    });
+  // 📈 SMOOTH MULTIPLIER (time-based engine)
+  const elapsed = (Date.now() - currentRound.startedAt) / 1000;
+  currentRound.multiplier = +(1.02 ** elapsed).toFixed(2);
 
-    // 💰 AUTO CASHOUT LOGIC
-    const activeBets = getActiveBetsByRound(currentRound.id);
+  // 📡 BROADCAST MULTIPLIER
+  global.io?.emit("multiplier", {
+    multiplier: currentRound.multiplier,
+    roundId: currentRound.roundId,
+    status: currentRound.status,
+  });
 
-    activeBets.forEach((bet) => {
-      if (!bet.autoCashoutTriggered && currentRound.multiplier >= 1.5) {
-        bet.autoCashoutTriggered = true;
+  // 💰 AUTO CASHOUT LOGIC
+  const activeBets = getActiveBetsByRound(currentRound.roundId);
 
-        const result = cashout(bet.id, currentRound.multiplier);
+  activeBets.forEach((bet) => {
+    if (!bet.autoCashoutTriggered && currentRound.multiplier >= 1.5) {
+      bet.autoCashoutTriggered = true;
 
-        if (result) {
-          credit(result.userId, result.winAmount);
+      const result = cashout(bet.id, currentRound.multiplier);
 
-          console.log(
-            `💰 USER CASHED OUT: ${result.userId} | WIN: ${result.winAmount}`
-          );
-        }
+      if (result) {
+        credit(result.userId, result.winAmount);
+
+        console.log(
+          `💰 USER CASHED OUT: ${result.userId} | WIN: ${result.winAmount}`
+        );
       }
+    }
+  });
+
+  // 💥 CRASH CHECK
+  if (currentRound.multiplier >= crashPoint) {
+    clearInterval(interval);
+    interval = null;
+
+    currentRound.status = "crashed";
+    isRunning = false;
+
+    global.io?.emit("roundCrash", {
+      roundId: currentRound.roundId,
+      crashPoint,
     });
 
-    // 💥 CRASH CHECK
-    if (currentRound.multiplier >= crashPoint) {
-      clearInterval(interval);
+    console.log("💥 Crashed at:", crashPoint);
 
-      currentRound.status = "crashed";
-      isRunning = false;
+    currentRound.status = "waiting";
 
-      // 📡 CRASH EVENT
-      global.io?.emit("roundCrash", {
-        roundId: currentRound.id,
-        crashPoint,
-      });
+    global.io?.emit("roundWaiting", {
+      countdown: 5,
+    });
 
-      console.log("💥 Crashed at:", crashPoint);
-    }
-  }, 150);
+    setTimeout(() => {
+      startRound();
+    }, 5000);
+  }
+}, 150);
 }
-
+ // 📡 CRASH EVENT
 function getCurrentRound() {
   return currentRound;
 }
