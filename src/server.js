@@ -6,7 +6,7 @@ const { Server } = require("socket.io");
 const gameRoutes = require("./routes/gameRoutes");
 
 // 👇 IMPORTANT: import your engine here
-const { startRound } = require("./src/game/gameEngine"); 
+const { startRound } = require("./game/gameEngine"); 
 // example: "./engine/roundEngine" or "./src/game/gameEngine"
 
 const app = express();
