@@ -19,10 +19,10 @@ function pickRange() {
   const rand = Math.random();
 
   // probabilities
-  if (rand < 0.35) return "low";       // 35%
-  if (rand < 0.75) return "medium";    // 40%
-  if (rand < 0.95) return "high";      // 20%
-  return "extreme";                    // 5%
+ if (rand < 0.65) return "low";       // 65%
+if (rand < 0.90) return "medium";    // 25%
+if (rand < 0.98) return "high";      // 8%
+return "extreme";                    // 2%
 }
 
 function generateCrashPoint() {
